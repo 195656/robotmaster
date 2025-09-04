@@ -81,7 +81,7 @@ while True:
         approx = cv2.approxPolyDP(contour, epsilon, True)
         area = cv2.contourArea(approx)
 
-        # 检查是否为四边形
+        # 四边形
         if len(approx) == 4 and 300 < area:
             # 转换为点数组
             points = approx.reshape(4, 2)
@@ -96,7 +96,7 @@ while True:
             center = np.mean(box, axis=0)
 
 
-            # 对点进行排序（基于极角）
+            # 对点进行排序
             def sort_points_clockwise(points):
                 # 计算中心点
                 center = np.mean(points, axis=0)
@@ -132,11 +132,11 @@ while True:
 
                 angles.append(angle_deg)
 
-            # 检查角度是否接近90度（允许±20度的误差）
+            # 检查角度是否接近90度
             angle_threshold = 15
             valid_angles = all(70 <= angle <= 110 for angle in angles)
 
-            # 如果角度有效，则处理这个四边形
+          
             if valid_angles:
                 filtered_contours.append(np.array(sorted_points, dtype=np.float32))
                 cv2.drawContours(img2, [approx], -1, (0, 255, 0), 2)
