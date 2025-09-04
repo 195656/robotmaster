@@ -6,32 +6,27 @@ while True:
     img1 = frame.copy()
     img2 = frame.copy()
     frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-
-    # 应用高斯模糊减少噪声
+    #去噪
     blurred = cv2.GaussianBlur(frame_gray, (7, 7), 0)  # 增加模糊核大小
-
     # 二值化处理
     _, frame_thresh = cv2.threshold(blurred, 125, 255, cv2.THRESH_BINARY_INV)
 
-    # 形态学操作（闭操作）以连接断开的边缘
-    kernel = np.ones((7, 7), np.uint8)  # 增加核大小
+    # 画线容易有空隙，闭操作
+    kernel = np.ones((7, 7), np.uint8)
     frame_thresh = cv2.morphologyEx(frame_thresh, cv2.MORPH_CLOSE, kernel)
 
-    # 寻找轮廓
     contours, hierarchy = cv2.findContours(frame_thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
     cv2.drawContours(img1, contours, -1, (0, 255, 0), 2)
-    # 筛选轮廓
+
     filtered_contours = []
     for contour in contours:
-        # 过滤掉太小的轮廓
         if cv2.contourArea(contour) <600:
             continue
 
-        # 计算轮廓周长
-        perimeter = cv2.arcLength(contour, True)
+        zhouchang = cv2.arcLength(contour, True)
 
         # 多边形近似
-        epsilon = 0.03 * perimeter  # 增加epsilon值，减少对噪声的敏感度
+        epsilon = 0.03 * zhouchang
         approx = cv2.approxPolyDP(contour, epsilon, True)
         area = cv2.contourArea(approx)
 
@@ -40,7 +35,6 @@ while True:
             # 转换为点数组
             points = approx.reshape(4, 2)
 
-            # 使用更稳定的点排序方法
             # 计算边界矩形
             rect = cv2.minAreaRect(approx)
             box = cv2.boxPoints(rect)
@@ -84,11 +78,10 @@ while True:
 
                 angles.append(angle_deg)
 
-            # 检查角度是否接近90度（允许±20度的误差）
-            angle_threshold = 15  # 增加角度阈值
+            angle_threshold = 15  # 角度阈值
             valid_angles = all(70 <= angle <= 110 for angle in angles)  # 放宽角度范围
 
-            # 如果角度有效，则处理这个四边形
+
             if valid_angles:
                 filtered_contours.append(np.array(sorted_points, dtype=np.float32))
                 cv2.drawContours(img2, [sorted_points], -1, (0, 255, 0), 2)

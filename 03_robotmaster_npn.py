@@ -1,17 +1,15 @@
 import cv2
 import numpy as np
 
-# 初始化摄像头
 cap = cv2.VideoCapture(0)
 if not cap.isOpened():
     print("错误：无法打开摄像头")
     exit()
 
-# 获取帧的宽度和高度
 frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
 frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
-# 近似相机内参矩阵
+# 相机内参矩阵(未标定）
 focal_length = frame_width
 center = (frame_width / 2, frame_height / 2)
 camera_matrix = np.array([
@@ -20,7 +18,7 @@ camera_matrix = np.array([
     [0, 0, 1]
 ], dtype=np.float32)
 
-# 畸变系数（假设没有畸变）
+# 畸变系数
 dist_coeffs = np.zeros((4, 1), dtype=np.float32)
 
 # 定义正方形的3D世界坐标点（单位：厘米）
@@ -32,7 +30,7 @@ object_points = np.array([
     [-square_size / 2, square_size / 2, 0]  # 左上
 ], dtype=np.float32)
 
-# 定义3D坐标轴的点（用于可视化）
+
 axis_length = square_size * 1.5
 axis_points = np.array([
     [0, 0, 0],  # 原点
@@ -41,7 +39,7 @@ axis_points = np.array([
     [0, 0, -axis_length]  # Z轴
 ], dtype=np.float32)
 
-# 用于平滑处理的变量
+
 prev_rvec = None
 prev_tvec = None
 alpha = 0.3  # 平滑系数
@@ -58,32 +56,27 @@ while True:
 
     frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
-    # 应用高斯模糊减少噪声
     blurred = cv2.GaussianBlur(frame_gray, (7, 7), 0)
 
-    # 二值化处理
     _, frame_thresh = cv2.threshold(blurred, 0, 255,
                                     cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
 
-    # 形态学操作（闭操作）以连接断开的边缘
     kernel = np.ones((7, 7), np.uint8)
     frame_thresh = cv2.morphologyEx(frame_thresh, cv2.MORPH_CLOSE, kernel)
 
-    # 寻找轮廓
+
     contours, hierarchy = cv2.findContours(frame_thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
     cv2.drawContours(img1, contours, -1, (0, 255, 0), 2)
 
     # 筛选轮廓
     filtered_contours = []
     for contour in contours:
-        # 过滤掉太小的轮廓
+
         if cv2.contourArea(contour) < 300:
             continue
 
-        # 计算轮廓周长
         perimeter = cv2.arcLength(contour, True)
 
-        # 多边形近似
         epsilon = 0.01 * perimeter
         approx = cv2.approxPolyDP(contour, epsilon, True)
         area = cv2.contourArea(approx)
@@ -177,21 +170,21 @@ while True:
                 rotation_matrix = -rotation_matrix
                 rvec, _ = cv2.Rodrigues(rotation_matrix)
 
-            # 将3D坐标轴点投影到2D图像平面
+            # 投影到2D图像平面
             projected_axis_points, _ = cv2.projectPoints(
                 axis_points, rvec, tvec, camera_matrix, dist_coeffs
             )
             projected_axis_points = projected_axis_points.reshape(-1, 2).astype(int)
 
-            # 获取原点坐标
+            # 原点坐标
             origin = tuple(projected_axis_points[0])
 
             # 绘制坐标轴
-            # X轴（红色）
+            # X
             cv2.line(img3, origin, tuple(projected_axis_points[1]), (0, 0, 255), 3)
-            # Y轴（绿色）
+            # Y
             cv2.line(img3, origin, tuple(projected_axis_points[2]), (0, 255, 0), 3)
-            # Z轴（蓝色）
+            # Z
             cv2.line(img3, origin, tuple(projected_axis_points[3]), (255, 0, 0), 3)
 
             # 添加坐标轴标签
@@ -200,9 +193,7 @@ while True:
             cv2.putText(img3, "Y", tuple(projected_axis_points[2]), font, 0.5, (0, 255, 0), 2)
             cv2.putText(img3, "Z", tuple(projected_axis_points[3]), font, 0.5, (255, 0, 0), 2)
 
-            # 显示姿态信息
-            cv2.putText(img3, f"Rotation: {rvec.flatten()}", (10, 30), font, 0.7, (255, 255, 255), 2)
-            cv2.putText(img3, f"Translation: {tvec.flatten()}", (10, 60), font, 0.7, (255, 255, 255), 2)
+
 
             # 绘制检测到的正方形
             cv2.drawContours(img3, [square_points.astype(int)], -1, (0, 255, 255), 2)
