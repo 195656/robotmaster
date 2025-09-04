@@ -1,4 +1,9 @@
 01文件实现了对目标图片的特征区域提取，多次按键可分别查看每次图像处理后的执行结果
+
 02文件实现了对于电脑摄像头的 实时 画面的处理，实现提取出所需目标（四角星）
+
 detect_sq.py 实现了对npn中待识别物体的精准识别，便于给03文件排除识别精度的问题
+
 03文件实现了对目标矩形实现稳定npn操作
+
+项目二和项目三的演示视频在 https://www.bilibili.com/video/BV1r7aQzyEKV/?spm_id_from=333.1387.homepage.video_card.click
